@@ -1,182 +1,394 @@
 const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const dbPath = path.resolve(__dirname, 'database.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Could not connect to SQLite database:', err);
-  } else {
-    console.log('Connected to SQLite database at:', dbPath);
-  }
-});
+// Determine if we are using PostgreSQL (Production/Render) or SQLite (Local)
+const isPostgres = !!process.env.DATABASE_URL;
 
-// Helper functions to wrap sqlite3 methods in Promises
+let db = null;
+let pgPool = null;
+
+if (isPostgres) {
+  console.log('Connecting to PostgreSQL database...');
+  pgPool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false } // Required for Render Postgres connections
+  });
+} else {
+  const dbPath = path.resolve(__dirname, 'database.db');
+  console.log('Connecting to local SQLite database at:', dbPath);
+  db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+      console.error('Could not connect to SQLite database:', err);
+    } else {
+      console.log('Connected to SQLite database successfully.');
+    }
+  });
+}
+
+// Regex query translator to convert SQLite "?" parameters to PostgreSQL "$1, $2, ..."
+const translateQuery = (query) => {
+  if (!isPostgres) return query;
+  let paramIndex = 1;
+  return query.replace(/\?/g, () => `$${paramIndex++}`);
+};
+
+// SQL execution wrappers
 const dbRun = (query, params = []) => {
   return new Promise((resolve, reject) => {
-    db.run(query, params, function (err) {
-      if (err) reject(err);
-      else resolve({ id: this.lastID, changes: this.changes });
-    });
+    if (isPostgres) {
+      let pgQuery = translateQuery(query);
+      
+      // Auto-append RETURNING clause to PostgreSQL INSERT statement to fetch inserted ID
+      if (pgQuery.trim().toUpperCase().startsWith('INSERT') && !pgQuery.toUpperCase().includes('RETURNING')) {
+        const match = pgQuery.match(/INSERT\s+INTO\s+(\w+)/i);
+        if (match) {
+          const tableName = match[1].toLowerCase();
+          let idColumn = 'id';
+          if (tableName === 'users') idColumn = 'user_id';
+          else if (tableName === 'pets') idColumn = 'pet_id';
+          else if (tableName === 'pet_images') idColumn = 'image_id';
+          else if (tableName === 'pet_listings') idColumn = 'listing_id';
+          else if (tableName === 'adoption_applications') idColumn = 'application_id';
+          else if (tableName === 'foster_requests') idColumn = 'request_id';
+          else if (tableName === 'payments') idColumn = 'payment_id';
+          else if (tableName === 'reviews') idColumn = 'review_id';
+          else if (tableName === 'messages') idColumn = 'message_id';
+          else if (tableName === 'notifications') idColumn = 'notification_id';
+          
+          pgQuery += ` RETURNING ${idColumn}`;
+        }
+      }
+
+      pgPool.query(pgQuery, params, (err, res) => {
+        if (err) {
+          reject(err);
+        } else {
+          const rows = res.rows;
+          const lastID = rows && rows.length > 0 ? Object.values(rows[0])[0] : null;
+          resolve({ id: lastID, changes: res.rowCount });
+        }
+      });
+    } else {
+      db.run(query, params, function (err) {
+        if (err) reject(err);
+        else resolve({ id: this.lastID, changes: this.changes });
+      });
+    }
   });
 };
 
 const dbAll = (query, params = []) => {
   return new Promise((resolve, reject) => {
-    db.all(query, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
+    if (isPostgres) {
+      const pgQuery = translateQuery(query);
+      pgPool.query(pgQuery, params, (err, res) => {
+        if (err) reject(err);
+        else resolve(res.rows);
+      });
+    } else {
+      db.all(query, params, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    }
   });
 };
 
 const dbGet = (query, params = []) => {
   return new Promise((resolve, reject) => {
-    db.get(query, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
+    if (isPostgres) {
+      const pgQuery = translateQuery(query);
+      pgPool.query(pgQuery, params, (err, res) => {
+        if (err) reject(err);
+        else resolve(res.rows[0] || null);
+      });
+    } else {
+      db.get(query, params, (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    }
   });
 };
 
 // Initialize the database tables
 const initDb = async () => {
   try {
-    // Enable Foreign Keys
-    await dbRun('PRAGMA foreign_keys = ON;');
+    if (isPostgres) {
+      console.log('Initializing PostgreSQL database schemas...');
+      
+      // 1. Users table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS users (
+          user_id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT UNIQUE NOT NULL,
+          phone TEXT,
+          password_hash TEXT NOT NULL,
+          role TEXT CHECK(role IN ('admin', 'seller', 'foster_parent', 'buyer')) DEFAULT 'buyer',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
 
-    // 1. Users table
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS users (
-        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        phone TEXT,
-        password_hash TEXT NOT NULL,
-        role TEXT CHECK(role IN ('admin', 'seller', 'foster_parent', 'buyer')) DEFAULT 'buyer',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+      // 2. Pets table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS pets (
+          pet_id SERIAL PRIMARY KEY,
+          owner_id INTEGER,
+          pet_name TEXT NOT NULL,
+          species TEXT NOT NULL,
+          breed TEXT,
+          age INTEGER,
+          gender TEXT CHECK(gender IN ('Male', 'Female', 'Unknown')) DEFAULT 'Unknown',
+          health_info TEXT,
+          FOREIGN KEY (owner_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
 
-    // 2. Pets table
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS pets (
-        pet_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        owner_id INTEGER,
-        pet_name TEXT NOT NULL,
-        species TEXT NOT NULL,
-        breed TEXT,
-        age INTEGER,
-        gender TEXT CHECK(gender IN ('Male', 'Female', 'Unknown')) DEFAULT 'Unknown',
-        health_info TEXT,
-        FOREIGN KEY (owner_id) REFERENCES users(user_id) ON DELETE CASCADE
-      )
-    `);
+      // 3. Pet Images table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS pet_images (
+          image_id SERIAL PRIMARY KEY,
+          pet_id INTEGER,
+          image_url TEXT NOT NULL,
+          FOREIGN KEY (pet_id) REFERENCES pets(pet_id) ON DELETE CASCADE
+        )
+      `);
 
-    // 3. Pet Images table
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS pet_images (
-        image_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        pet_id INTEGER,
-        image_url TEXT NOT NULL,
-        FOREIGN KEY (pet_id) REFERENCES pets(pet_id) ON DELETE CASCADE
-      )
-    `);
+      // 4. Pet Listings table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS pet_listings (
+          listing_id SERIAL PRIMARY KEY,
+          pet_id INTEGER,
+          listing_type TEXT CHECK(listing_type IN ('sell', 'adopt', 'foster')) NOT NULL,
+          price REAL DEFAULT 0,
+          status TEXT CHECK(status IN ('active', 'pending', 'completed')) DEFAULT 'active',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (pet_id) REFERENCES pets(pet_id) ON DELETE CASCADE
+        )
+      `);
 
-    // 4. Pet Listings table
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS pet_listings (
-        listing_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        pet_id INTEGER,
-        listing_type TEXT CHECK(listing_type IN ('sell', 'adopt', 'foster')) NOT NULL,
-        price REAL DEFAULT 0,
-        status TEXT CHECK(status IN ('active', 'pending', 'completed')) DEFAULT 'active',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (pet_id) REFERENCES pets(pet_id) ON DELETE CASCADE
-      )
-    `);
+      // 5. Adoption Applications table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS adoption_applications (
+          application_id SERIAL PRIMARY KEY,
+          listing_id INTEGER,
+          applicant_id INTEGER,
+          message TEXT,
+          status TEXT CHECK(status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (listing_id) REFERENCES pet_listings(listing_id) ON DELETE CASCADE,
+          FOREIGN KEY (applicant_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
 
-    // 5. Adoption Applications table
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS adoption_applications (
-        application_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        listing_id INTEGER,
-        applicant_id INTEGER,
-        message TEXT,
-        status TEXT CHECK(status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (listing_id) REFERENCES pet_listings(listing_id) ON DELETE CASCADE,
-        FOREIGN KEY (applicant_id) REFERENCES users(user_id) ON DELETE CASCADE
-      )
-    `);
+      // 6. Foster Requests table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS foster_requests (
+          request_id SERIAL PRIMARY KEY,
+          listing_id INTEGER,
+          foster_parent_id INTEGER,
+          start_date TEXT,
+          end_date TEXT,
+          status TEXT CHECK(status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (listing_id) REFERENCES pet_listings(listing_id) ON DELETE CASCADE,
+          FOREIGN KEY (foster_parent_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
 
-    // 6. Foster Requests table
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS foster_requests (
-        request_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        listing_id INTEGER,
-        foster_parent_id INTEGER,
-        start_date TEXT,
-        end_date TEXT,
-        status TEXT CHECK(status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (listing_id) REFERENCES pet_listings(listing_id) ON DELETE CASCADE,
-        FOREIGN KEY (foster_parent_id) REFERENCES users(user_id) ON DELETE CASCADE
-      )
-    `);
+      // 7. Payments table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS payments (
+          payment_id SERIAL PRIMARY KEY,
+          user_id INTEGER,
+          amount REAL,
+          payment_status TEXT CHECK(payment_status IN ('pending', 'success', 'failed')) DEFAULT 'success',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
 
-    // 7. Payments table
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS payments (
-        payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        amount REAL,
-        payment_status TEXT CHECK(payment_status IN ('pending', 'success', 'failed')) DEFAULT 'success',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-      )
-    `);
+      // 8. Reviews table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS reviews (
+          review_id SERIAL PRIMARY KEY,
+          reviewer_id INTEGER,
+          reviewed_user_id INTEGER,
+          rating INTEGER CHECK(rating >= 1 AND rating <= 5),
+          comment TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (reviewer_id) REFERENCES users(user_id) ON DELETE CASCADE,
+          FOREIGN KEY (reviewed_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
 
-    // 8. Reviews table
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS reviews (
-        review_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        reviewer_id INTEGER,
-        reviewed_user_id INTEGER,
-        rating INTEGER CHECK(rating >= 1 AND rating <= 5),
-        comment TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (reviewer_id) REFERENCES users(user_id) ON DELETE CASCADE,
-        FOREIGN KEY (reviewed_user_id) REFERENCES users(user_id) ON DELETE CASCADE
-      )
-    `);
+      // 9. Messages table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS messages (
+          message_id SERIAL PRIMARY KEY,
+          sender_id INTEGER,
+          receiver_id INTEGER,
+          message_text TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (sender_id) REFERENCES users(user_id) ON DELETE CASCADE,
+          FOREIGN KEY (receiver_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
 
-    // 9. Messages table
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS messages (
-        message_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sender_id INTEGER,
-        receiver_id INTEGER,
-        message_text TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (sender_id) REFERENCES users(user_id) ON DELETE CASCADE,
-        FOREIGN KEY (receiver_id) REFERENCES users(user_id) ON DELETE CASCADE
-      )
-    `);
+      // 10. Notifications table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS notifications (
+          notification_id SERIAL PRIMARY KEY,
+          user_id INTEGER,
+          title TEXT NOT NULL,
+          is_read INTEGER CHECK(is_read IN (0, 1)) DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
 
-    // 10. Notifications table
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS notifications (
-        notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        title TEXT NOT NULL,
-        is_read INTEGER CHECK(is_read IN (0, 1)) DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-      )
-    `);
+      console.log('PostgreSQL database schemas created successfully.');
 
-    console.log('Database tables verified/created successfully.');
+    } else {
+      console.log('Initializing SQLite database schema...');
+      // Enable Foreign Keys
+      await dbRun('PRAGMA foreign_keys = ON;');
+
+      // 1. Users table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS users (
+          user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          email TEXT UNIQUE NOT NULL,
+          phone TEXT,
+          password_hash TEXT NOT NULL,
+          role TEXT CHECK(role IN ('admin', 'seller', 'foster_parent', 'buyer')) DEFAULT 'buyer',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // 2. Pets table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS pets (
+          pet_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          owner_id INTEGER,
+          pet_name TEXT NOT NULL,
+          species TEXT NOT NULL,
+          breed TEXT,
+          age INTEGER,
+          gender TEXT CHECK(gender IN ('Male', 'Female', 'Unknown')) DEFAULT 'Unknown',
+          health_info TEXT,
+          FOREIGN KEY (owner_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
+
+      // 3. Pet Images table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS pet_images (
+          image_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          pet_id INTEGER,
+          image_url TEXT NOT NULL,
+          FOREIGN KEY (pet_id) REFERENCES pets(pet_id) ON DELETE CASCADE
+        )
+      `);
+
+      // 4. Pet Listings table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS pet_listings (
+          listing_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          pet_id INTEGER,
+          listing_type TEXT CHECK(listing_type IN ('sell', 'adopt', 'foster')) NOT NULL,
+          price REAL DEFAULT 0,
+          status TEXT CHECK(status IN ('active', 'pending', 'completed')) DEFAULT 'active',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (pet_id) REFERENCES pets(pet_id) ON DELETE CASCADE
+        )
+      `);
+
+      // 5. Adoption Applications table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS adoption_applications (
+          application_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          listing_id INTEGER,
+          applicant_id INTEGER,
+          message TEXT,
+          status TEXT CHECK(status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (listing_id) REFERENCES pet_listings(listing_id) ON DELETE CASCADE,
+          FOREIGN KEY (applicant_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
+
+      // 6. Foster Requests table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS foster_requests (
+          request_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          listing_id INTEGER,
+          foster_parent_id INTEGER,
+          start_date TEXT,
+          end_date TEXT,
+          status TEXT CHECK(status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (listing_id) REFERENCES pet_listings(listing_id) ON DELETE CASCADE,
+          FOREIGN KEY (foster_parent_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
+
+      // 7. Payments table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS payments (
+          payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER,
+          amount REAL,
+          payment_status TEXT CHECK(payment_status IN ('pending', 'success', 'failed')) DEFAULT 'success',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
+
+      // 8. Reviews table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS reviews (
+          review_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          reviewer_id INTEGER,
+          reviewed_user_id INTEGER,
+          rating INTEGER CHECK(rating >= 1 AND rating <= 5),
+          comment TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (reviewer_id) REFERENCES users(user_id) ON DELETE CASCADE,
+          FOREIGN KEY (reviewed_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
+
+      // 9. Messages table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS messages (
+          message_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          sender_id INTEGER,
+          receiver_id INTEGER,
+          message_text TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (sender_id) REFERENCES users(user_id) ON DELETE CASCADE,
+          FOREIGN KEY (receiver_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
+
+      // 10. Notifications table
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS notifications (
+          notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER,
+          title TEXT NOT NULL,
+          is_read INTEGER CHECK(is_read IN (0, 1)) DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )
+      `);
+      console.log('SQLite database schemas created successfully.');
+    }
     await seedData();
   } catch (error) {
     console.error('Error initializing database:', error);
@@ -187,7 +399,7 @@ const initDb = async () => {
 const seedData = async () => {
   try {
     const userCount = await dbGet('SELECT COUNT(*) as count FROM users');
-    if (userCount.count > 0) {
+    if (parseInt(userCount.count) > 0) {
       console.log('Database already contains data. Skipping seeding.');
       return;
     }
