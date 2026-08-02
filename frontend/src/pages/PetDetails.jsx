@@ -201,7 +201,7 @@ export default function PetDetails({
   const handleDeleteListing = async () => {
     if (!window.confirm('Are you sure you want to delete this listing?')) return;
     try {
-      const res = await fetch(`http://localhost:5005/api/pets/${listingId}`, {
+      const res = await fetch(`http://`${API_BASE}/api/pets/${listingId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
