@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { API_BASE } from '../config';
 
-
 export default function Dashboard({ token, user, setCurrentPage, setSelectedListingId, fetchUnreadNotificationsCount }) {
   const [activeTab, setActiveTab] = useState('received'); // 'received', 'sent', 'payments', 'notifications'
 
@@ -116,13 +115,14 @@ export default function Dashboard({ token, user, setCurrentPage, setSelectedList
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        background: 'linear-gradient(135deg, rgba(22,31,48,0.7), rgba(30,41,59,0.7))'
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border-color)'
       }}>
         <div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 700, textTransform: 'uppercase' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             User Account Profile
           </span>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{user.name}</h1>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>{user.name}</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Email: {user.email} | Role: {user.role}</p>
         </div>
         <button className="btn btn-primary btn-sm" onClick={() => setCurrentPage('create')}>
@@ -168,7 +168,7 @@ export default function Dashboard({ token, user, setCurrentPage, setSelectedList
           {/* TAB 1: APPLICATIONS RECEIVED */}
           {activeTab === 'received' && (
             <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem' }}>Applications for your Pets</h2>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Applications for your Pets</h2>
               
               {receivedApps.adoptions.length === 0 && receivedApps.fosters.length === 0 ? (
                 <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>No applications received yet.</p>
@@ -176,17 +176,17 @@ export default function Dashboard({ token, user, setCurrentPage, setSelectedList
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                   {/* Adoptions */}
                   {receivedApps.adoptions.map(app => (
-                    <div key={app.application_id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glass)', padding: '1.25rem', borderRadius: 'var(--radius-md)' }}>
+                    <div key={app.application_id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '1.25rem', borderRadius: 'var(--radius-md)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                         <div>
-                          <strong style={{ fontSize: '1.1rem' }}>Adoption Application for {app.pet_name}</strong>
+                          <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>Adoption Application for {app.pet_name}</strong>
                           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                             From: {app.applicant_name} ({app.applicant_email})
                           </div>
                         </div>
                         <span className={`badge badge-${app.status}`}>{app.status}</span>
                       </div>
-                      <p style={{ color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                      <p style={{ color: 'var(--text-secondary)', background: '#FFFFFF', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', fontSize: '0.9rem' }}>
                         "{app.message}"
                       </p>
                       {app.status === 'pending' && (
@@ -204,10 +204,10 @@ export default function Dashboard({ token, user, setCurrentPage, setSelectedList
 
                   {/* Fosters */}
                   {receivedApps.fosters.map(app => (
-                    <div key={app.request_id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glass)', padding: '1.25rem', borderRadius: 'var(--radius-md)' }}>
+                    <div key={app.request_id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '1.25rem', borderRadius: 'var(--radius-md)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                         <div>
-                          <strong style={{ fontSize: '1.1rem' }}>Foster Request for {app.pet_name}</strong>
+                          <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>Foster Request for {app.pet_name}</strong>
                           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                             From: {app.foster_parent_name} ({app.foster_parent_email})
                           </div>
@@ -237,7 +237,7 @@ export default function Dashboard({ token, user, setCurrentPage, setSelectedList
           {/* TAB 2: APPLICATIONS SENT */}
           {activeTab === 'sent' && (
             <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem' }}>Your Sent Requests</h2>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Your Sent Requests</h2>
 
               {sentApps.adoptions.length === 0 && sentApps.fosters.length === 0 ? (
                 <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>You haven't submitted any applications yet.</p>
@@ -245,9 +245,9 @@ export default function Dashboard({ token, user, setCurrentPage, setSelectedList
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   {/* Adoptions */}
                   {sentApps.adoptions.map(app => (
-                    <div key={app.application_id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glass)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={app.application_id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <strong>Adoption: {app.pet_name}</strong>
+                        <strong style={{ color: 'var(--text-primary)' }}>Adoption: {app.pet_name}</strong>
                         <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                           Owner: {app.owner_name}
                         </span>
@@ -263,9 +263,9 @@ export default function Dashboard({ token, user, setCurrentPage, setSelectedList
 
                   {/* Fosters */}
                   {sentApps.fosters.map(app => (
-                    <div key={app.request_id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glass)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={app.request_id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <strong>Foster: {app.pet_name}</strong>
+                        <strong style={{ color: 'var(--text-primary)' }}>Foster: {app.pet_name}</strong>
                         <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                           Dates: {app.start_date} to {app.end_date} | Owner: {app.owner_name}
                         </span>
@@ -286,7 +286,7 @@ export default function Dashboard({ token, user, setCurrentPage, setSelectedList
           {/* TAB 3: PAYMENTS HISTORY */}
           {activeTab === 'payments' && (
             <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem' }}>Transaction History</h2>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Transaction History</h2>
               
               {payments.length === 0 ? (
                 <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>No payment transactions logged.</p>
@@ -294,7 +294,7 @@ export default function Dashboard({ token, user, setCurrentPage, setSelectedList
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.95rem' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1.5px solid var(--border-glass)', color: 'var(--text-muted)' }}>
+                      <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>
                         <th style={{ padding: '0.75rem 1rem' }}>Payment ID</th>
                         <th style={{ padding: '0.75rem 1rem' }}>Amount</th>
                         <th style={{ padding: '0.75rem 1rem' }}>Date</th>
@@ -303,8 +303,8 @@ export default function Dashboard({ token, user, setCurrentPage, setSelectedList
                     </thead>
                     <tbody>
                       {payments.map(p => (
-                        <tr key={p.payment_id} style={{ borderBottom: '1px solid var(--border-glass)' }}>
-                          <td style={{ padding: '0.75rem 1rem', fontFamily: 'monospace' }}>#{p.payment_id}</td>
+                        <tr key={p.payment_id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                          <td style={{ padding: '0.75rem 1rem', fontFamily: 'monospace', color: 'var(--text-primary)' }}>#{p.payment_id}</td>
                           <td style={{ padding: '0.75rem 1rem', fontWeight: 'bold', color: 'var(--color-success)' }}>${p.amount.toLocaleString()}</td>
                           <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>{new Date(p.created_at).toLocaleDateString()}</td>
                           <td style={{ padding: '0.75rem 1rem' }}>
@@ -325,7 +325,7 @@ export default function Dashboard({ token, user, setCurrentPage, setSelectedList
           {activeTab === 'notifications' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Recent Notices</h2>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>Recent Notices</h2>
                 {notifications.some(n => !n.is_read) && (
                   <button className="btn btn-secondary btn-sm" onClick={handleMarkAllNotificationsRead}>
                     Mark all as read
@@ -342,8 +342,8 @@ export default function Dashboard({ token, user, setCurrentPage, setSelectedList
                       key={n.notification_id} 
                       onClick={() => !n.is_read && handleMarkRead(n.notification_id)}
                       style={{
-                        background: n.is_read ? 'rgba(255,255,255,0.01)' : 'rgba(99, 102, 241, 0.05)',
-                        border: '1px solid var(--border-glass)',
+                        background: n.is_read ? '#FFFFFF' : 'var(--color-primary-light)',
+                        border: '1px solid var(--border-color)',
                         padding: '1rem 1.25rem',
                         borderRadius: 'var(--radius-md)',
                         display: 'flex',

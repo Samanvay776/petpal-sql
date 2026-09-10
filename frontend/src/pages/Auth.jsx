@@ -144,7 +144,7 @@ export default function Auth({ setAuthData, setCurrentPage }) {
           </button>
         </form>
 
-        <hr style={{ border: 'none', borderTop: '1px solid var(--border-glass)', margin: '2rem 0 1.5rem 0' }} />
+        <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '2rem 0 1.5rem 0' }} />
 
         <div style={{ textAlign: 'center', fontSize: '0.9rem' }}>
           <span style={{ color: 'var(--text-secondary)' }}>

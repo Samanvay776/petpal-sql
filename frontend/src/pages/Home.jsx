@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import PetCard from '../components/PetCard';
 import { API_BASE } from '../config';
 
-
 export default function Home({ setCurrentPage, setSelectedListingId, setBrowseFilters }) {
   const [featuredPets, setFeaturedPets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,7 +10,6 @@ export default function Home({ setCurrentPage, setSelectedListingId, setBrowseFi
     fetch(`${API_BASE}/api/pets`)
       .then(res => res.json())
       .then(data => {
-        // Just take the first 3 active listings as featured
         setFeaturedPets(data.slice(0, 3));
         setLoading(false);
       })
@@ -39,45 +37,41 @@ export default function Home({ setCurrentPage, setSelectedListingId, setBrowseFi
         padding: '4rem 2rem',
         textAlign: 'center',
         marginBottom: '3rem',
-        background: 'linear-gradient(135deg, rgba(22, 31, 48, 0.8), rgba(15, 23, 42, 0.8))',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
+        background: 'linear-gradient(135deg, #FFFFFF 0%, #F0F4F2 100%)',
+        border: '1px solid var(--border-color)',
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        boxShadow: 'var(--shadow-md)'
       }}>
         <div style={{
           position: 'absolute',
           top: '-20%',
-          left: '-20%',
-          width: '60%',
+          left: '-10%',
+          width: '50%',
           height: '60%',
-          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(46, 125, 107, 0.06) 0%, transparent 70%)',
           pointerEvents: 'none'
         }}></div>
 
         <h1 style={{
-          fontSize: '3.5rem',
+          fontSize: '3.25rem',
           fontWeight: 800,
           marginBottom: '1rem',
           lineHeight: '1.2',
-          background: 'linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
+          color: 'var(--text-primary)'
         }}>
           Find Your New <br />
-          <span style={{ 
-            background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>Best Friend</span> Today
+          <span style={{ color: 'var(--color-primary)' }}>Best Friend</span> Today
         </h1>
         
         <p style={{
           color: 'var(--text-secondary)',
-          fontSize: '1.2rem',
-          maxWidth: '600px',
-          margin: '0 auto 2.5rem auto'
+          fontSize: '1.15rem',
+          maxWidth: '620px',
+          margin: '0 auto 2.5rem auto',
+          lineHeight: '1.6'
         }}>
-          PetPal is the premium database platform for purchasing, adopting, or fostering loving pets. Connect directly with owners and browse certified listings.
+          PetPal is the professional pet-care platform for purchasing, adopting, or fostering loving pets. Connect directly with verified owners and certified listings.
         </p>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -121,8 +115,8 @@ export default function Home({ setCurrentPage, setSelectedListingId, setBrowseFi
               transition: 'var(--transition-smooth)'
             }}
             onClick={() => handleCategoryClick('Dog')}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border-glass)'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}
           >
             <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🐕</span>
             <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem' }}>Dogs</h3>
@@ -139,8 +133,8 @@ export default function Home({ setCurrentPage, setSelectedListingId, setBrowseFi
               transition: 'var(--transition-smooth)'
             }}
             onClick={() => handleCategoryClick('Cat')}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border-glass)'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}
           >
             <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🐈</span>
             <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem' }}>Cats</h3>
@@ -157,8 +151,8 @@ export default function Home({ setCurrentPage, setSelectedListingId, setBrowseFi
               transition: 'var(--transition-smooth)'
             }}
             onClick={() => handleCategoryClick('Rabbit')}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border-glass)'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}
           >
             <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🐇</span>
             <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem' }}>Rabbits</h3>
@@ -178,8 +172,8 @@ export default function Home({ setCurrentPage, setSelectedListingId, setBrowseFi
           gap: '2rem'
         }}>
           <div className="glass-panel" style={{ padding: '2rem', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#818cf8', marginBottom: '0.75rem' }}>🏷️ Premium Sales</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', flexGrow: 1 }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-primary)', marginBottom: '0.75rem' }}>🏷️ Premium Sales</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', flexGrow: 1, lineHeight: '1.5' }}>
               Browse beautiful, healthy, and certified pets for sale. Safe transaction logs managed dynamically on our platform.
             </p>
             <button className="btn btn-secondary btn-sm" onClick={() => handleListingTypeClick('sell')}>
@@ -188,8 +182,8 @@ export default function Home({ setCurrentPage, setSelectedListingId, setBrowseFi
           </div>
 
           <div className="glass-panel" style={{ padding: '2rem', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#34d399', marginBottom: '0.75rem' }}>❤️ Adoption Applications</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', flexGrow: 1 }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#B47818', marginBottom: '0.75rem' }}>❤️ Adoption Applications</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', flexGrow: 1, lineHeight: '1.5' }}>
               Apply to adopt pets looking for their forever home. Free re-homing listings with direct communication with existing owners.
             </p>
             <button className="btn btn-secondary btn-sm" onClick={() => handleListingTypeClick('adopt')}>
@@ -198,8 +192,8 @@ export default function Home({ setCurrentPage, setSelectedListingId, setBrowseFi
           </div>
 
           <div className="glass-panel" style={{ padding: '2rem', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fbbf24', marginBottom: '0.75rem' }}>🏠 Foster Parenting</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', flexGrow: 1 }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#2563EB', marginBottom: '0.75rem' }}>🏠 Foster Parenting</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', flexGrow: 1, lineHeight: '1.5' }}>
               Become a temporary foster parent! Provide shelter and care for pets whose owners are traveling or relocating.
             </p>
             <button className="btn btn-secondary btn-sm" onClick={() => handleListingTypeClick('foster')}>

@@ -218,8 +218,8 @@ export default function App() {
                       if (!n.is_read) handleMarkNotificationRead(n.notification_id);
                     }}
                     style={{
-                      background: n.is_read ? 'rgba(255,255,255,0.01)' : 'rgba(99, 102, 241, 0.05)',
-                      border: '1px solid var(--border-glass)',
+                      background: n.is_read ? '#FFFFFF' : 'var(--color-primary-light)',
+                      border: '1px solid var(--border-color)',
                       padding: '0.8rem 1rem',
                       borderRadius: 'var(--radius-md)',
                       cursor: !n.is_read ? 'pointer' : 'default',

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { API_BASE } from '../config';
 
-
 export default function PetDetails({ 
   listingId, 
   user, 
@@ -201,7 +200,7 @@ export default function PetDetails({
   const handleDeleteListing = async () => {
     if (!window.confirm('Are you sure you want to delete this listing?')) return;
     try {
-      const res = await fetch(`http://`${API_BASE}/api/pets/${listingId}`, {
+      const res = await fetch(`${API_BASE}/api/pets/${listingId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -274,8 +273,8 @@ export default function PetDetails({
                     borderRadius: 'var(--radius-md)',
                     overflow: 'hidden',
                     cursor: 'pointer',
-                    border: activeImageIndex === idx ? '2.5px solid var(--color-primary)' : '1px solid var(--border-glass)',
-                    opacity: activeImageIndex === idx ? 1 : 0.6,
+                    border: activeImageIndex === idx ? '2.5px solid var(--color-primary)' : '1px solid var(--border-color)',
+                    opacity: activeImageIndex === idx ? 1 : 0.7,
                     transition: 'var(--transition-smooth)'
                   }}
                 >
@@ -289,9 +288,9 @@ export default function PetDetails({
         {/* Right Side: Information Panel */}
         <div className="glass-panel" style={{ padding: '2rem', borderRadius: 'var(--radius-lg)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h1 style={{ fontSize: '2.25rem', fontWeight: 800 }}>{pet_name}</h1>
+            <h1 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{pet_name}</h1>
             {listing_type === 'sell' && (
-              <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+              <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-primary)' }}>
                 ${price.toLocaleString()}
               </span>
             )}
@@ -308,19 +307,19 @@ export default function PetDetails({
             gap: '1rem',
             marginBottom: '2rem'
           }}>
-            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-glass)' }}>
+            <div style={{ background: 'var(--bg-secondary)', padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
               <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Age</span>
-              <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>{age} {age === 1 ? 'Year' : 'Years'}</span>
+              <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{age} {age === 1 ? 'Year' : 'Years'}</span>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-glass)' }}>
+            <div style={{ background: 'var(--bg-secondary)', padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
               <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Gender</span>
-              <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>{gender}</span>
+              <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{gender}</span>
             </div>
           </div>
 
           {/* Health info */}
           <div style={{ marginBottom: '2rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>
               Health & Description
             </h3>
             <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
@@ -328,14 +327,14 @@ export default function PetDetails({
             </p>
           </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid var(--border-glass)', marginBottom: '1.5rem' }} />
+          <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', marginBottom: '1.5rem' }} />
 
           {/* Owner details */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
             <div>
               <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Listed By</span>
-              <span style={{ fontSize: '1.05rem', fontWeight: 600 }}>{owner_name}</span>
-              <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-accent)', marginTop: '0.1rem' }}>
+              <span style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)' }}>{owner_name}</span>
+              <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--color-accent)', fontWeight: 600, marginTop: '0.1rem' }}>
                 ★ {parseFloat(owner_rating).toFixed(1)} ({owner_review_count} {owner_review_count === 1 ? 'review' : 'reviews'})
               </span>
             </div>
@@ -414,12 +413,12 @@ export default function PetDetails({
               </div>
             ) : (
               <form onSubmit={handlePaymentSubmit}>
-                <div style={{ marginBottom: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ marginBottom: '1.5rem', background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                   <p style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                     <span>Listing:</span> <strong>{pet_name} ({breed})</strong>
                   </p>
                   <p style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem' }}>
-                    <span>Total Amount:</span> <strong style={{ color: 'var(--color-success)' }}>${price.toLocaleString()}</strong>
+                    <span>Total Amount:</span> <strong style={{ color: 'var(--color-primary)' }}>${price.toLocaleString()}</strong>
                   </p>
                 </div>
                 

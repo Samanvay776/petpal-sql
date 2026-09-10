@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { API_BASE } from '../config';
 
-
 export default function Chat({ token, user, partnerData, setPartnerData }) {
   const [contacts, setContacts] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -27,7 +26,6 @@ export default function Chat({ token, user, partnerData, setPartnerData }) {
         const data = await res.json();
         setContacts(data);
 
-        // If partnerData was passed in from details view, ensure they are in contacts or we select them
         if (partnerData && !data.some(c => c.partner_id === partnerData.partner_id)) {
           setContacts(prev => [partnerData, ...prev]);
         }
@@ -65,7 +63,6 @@ export default function Chat({ token, user, partnerData, setPartnerData }) {
       setLoadingMessages(true);
       fetchMessages(partnerData.partner_id).finally(() => setLoadingMessages(false));
 
-      // Setup Polling every 3 seconds for new messages
       if (pollingRef.current) clearInterval(pollingRef.current);
       pollingRef.current = setInterval(() => {
         fetchMessages(partnerData.partner_id);
@@ -104,7 +101,6 @@ export default function Chat({ token, user, partnerData, setPartnerData }) {
         const data = await res.json();
         setMessages(prev => [...prev, data]);
         setMessageText('');
-        // Refresh contacts to bubble active chats to top
         fetchContacts();
       }
     } catch (err) {
@@ -119,8 +115,8 @@ export default function Chat({ token, user, partnerData, setPartnerData }) {
       <div className="chat-container glass-panel">
         {/* Left column: contacts */}
         <div className="chat-sidebar">
-          <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-glass)' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-muted)' }}>Conversations</h3>
+          <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Conversations</h3>
           </div>
 
           {loadingContacts ? (
@@ -150,8 +146,8 @@ export default function Chat({ token, user, partnerData, setPartnerData }) {
           {partnerData?.partner_id ? (
             <>
               {/* Active partner bar */}
-              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-glass)', background: 'rgba(0,0,0,0.1)' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{partnerData.partner_name}</h3>
+              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', background: '#FFFFFF' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{partnerData.partner_name}</h3>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{partnerData.partner_email}</span>
               </div>
 
