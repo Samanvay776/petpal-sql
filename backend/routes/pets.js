@@ -13,7 +13,11 @@ router.get('/', async (req, res) => {
            pi.image_url, u.name as owner_name
     FROM pet_listings pl
     JOIN pets p ON pl.pet_id = p.pet_id
-    LEFT JOIN pet_images pi ON p.pet_id = pi.pet_id
+    LEFT JOIN (
+      SELECT pet_id, MIN(image_url) as image_url
+      FROM pet_images
+      GROUP BY pet_id
+    ) pi ON p.pet_id = pi.pet_id
     JOIN users u ON p.owner_id = u.user_id
     WHERE pl.status = 'active'
   `;
@@ -49,9 +53,7 @@ router.get('/', async (req, res) => {
     params.push(searchParam, searchParam, searchParam);
   }
 
-  // Group by listing_id to prevent duplicates if there are multiple images, 
-  // or return the first image in the main list.
-  query += ` GROUP BY pl.listing_id ORDER BY pl.created_at DESC`;
+  query += ` ORDER BY pl.created_at DESC`;
 
   try {
     const listings = await dbAll(query, params);
