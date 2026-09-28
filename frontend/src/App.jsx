@@ -6,6 +6,7 @@ import PetDetails from './pages/PetDetails';
 import CreateListing from './pages/CreateListing';
 import Dashboard from './pages/Dashboard';
 import Chat from './pages/Chat';
+import Auth from './pages/Auth';
 import { API_BASE } from './config';
 
 
