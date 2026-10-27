@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { dbRun, dbAll } = require('../db');
+const { dbRun, dbAll, dbGet } = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 
 // Get payments for logged-in user
